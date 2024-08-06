@@ -15,7 +15,6 @@ app.use((req, res, next) => {
 
 app.use(bodyParser.json());
 
-app.use("/api/v1/users", require("./v1/routes/user.route"));
 app.use("/api/v1/auth", require("./v1/routes/auth.route"));
 app.use("/api/v1/project", require("./v1/routes/project.route"));
 

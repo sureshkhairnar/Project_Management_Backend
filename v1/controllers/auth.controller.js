@@ -1,4 +1,4 @@
-const { result } = require("lodash");
+const _ = require("lodash");
 const UserModel = require("../models/user.model");
 const { compareHash } = require("../../helpers/encryption");
 const { createToken, verifyToken } = require("../../helpers/middlewares/token");
@@ -7,46 +7,41 @@ const UserCtrl = require("./user.controller");
 class AuthCtrl {
   static userLogin(req, res) {
     const { email, password } = req.body;
-    UserModel.findOne({ email: email, status: 1 })
+    UserModel.findOne({ email: email })
       .then((result) => {
-        console.log("result", result);
-        if (!result) throw new Error("Invalid email");
+        if (!result) throw new Error("Invalid Credentials");
         else if (compareHash(password, result.password)) {
           const accessToken = createToken(
             {
               _id: result._id,
-              role: result.role,
             },
             10 * 60
           );
           const refreshToken = createToken(
             {
               _id: result._id,
-              role: result.role,
             },
             60 * 60
           );
-          console.log("accessToken");
           res.set("x-access-token", accessToken);
           res.set("x-refresh-token", refreshToken);
 
           res.status(200).send({
-            message: "login successfully ",
+            message: "Login successful",
             data: UserCtrl.pickUser(result),
           });
         } else {
-          res.status(404).send({ message: "Invalid password" });
+          res.status(401).send({ message: "Invalid Credentials" });
         }
       })
       .catch((err) => {
         console.log(err);
-        res.status(404).send({ message: "Invalid email or user is disabled" });
+        res.status(404).send({ message: "Invalid Credentials" });
       });
   }
 
   static validateToken(req, res) {
     const token = req.headers.authorization;
-
     const payload = verifyToken(token);
 
     if (payload?._id) {
@@ -60,10 +55,10 @@ class AuthCtrl {
         })
         .catch((err) => {
           console.log(err);
-          throw new Error("invalid token");
+          throw new Error("Invalid token");
         });
     } else {
-      res.status(403).send({ message: "Invlaid Token", error: null });
+      res.status(403).send({ message: "Invalid Token" });
     }
   }
 
@@ -73,21 +68,15 @@ class AuthCtrl {
     const payload = verifyToken(refresh);
 
     if (payload?._id) {
-      const accessT = createToken(
-        { _id: payload?._id, role: payload?.role },
-        60 * 30
-      );
+      const accessToken = createToken({ _id: payload._id }, 10 * 60);
+      const refreshToken = createToken({ _id: payload._id }, 60 * 60);
 
-      const refreshT = createToken(
-        { _id: payload?._id, role: payload?.role },
-        60 * 60
-      );
-
-      res
-        .status(200)
-        .send({ data: { accessT, refreshT }, message: "token created" });
+      res.status(200).send({
+        data: { accessToken, refreshToken },
+        message: "Token refreshed",
+      });
     } else {
-      res.status(403).send({ message: "session expired", error: null });
+      res.status(403).send({ message: "Session expired" });
     }
   }
 }
