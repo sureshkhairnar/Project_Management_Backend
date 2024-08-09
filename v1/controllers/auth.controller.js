@@ -15,7 +15,7 @@ class AuthCtrl {
             {
               _id: result._id,
             },
-            10 * 60
+            60 * 20
           );
           const refreshToken = createToken(
             {
